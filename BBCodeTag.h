@@ -157,7 +157,7 @@ public:
     string render() {
 
         // Return nothing on empty tag
-        if(this->emptyTag() && !this->root) return "";
+        if(this->emptyTag() && !this->root) return "[]";
 
         // Return nothing on closing tag
         if (this->isClosingTag()) return "";
@@ -177,6 +177,9 @@ public:
 
         if (tag == "u")
             return "<u>" + inner + "</u>";
+
+        if (tag == "center")
+            return "<div style=\"text-align: center;\">" + inner + "</div>";
 
 
         return inner;
