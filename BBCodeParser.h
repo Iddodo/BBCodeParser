@@ -22,9 +22,11 @@ class BBCodeParser {
     shared_ptr<BBCodeTag> root;
     stack< shared_ptr<BBCodeTag> > tag_stack;
 
+    bool lbracket_identified;
+
 public:
 
-    BBCodeParser(string text) : root(make_shared<BBCodeTag>()) {
+    BBCodeParser(string text) : root(make_shared<BBCodeTag>()), lbracket_identified(false) {
         root->setRoot();
         tag_stack.push(root);
 
@@ -49,11 +51,21 @@ private:
             this->controllerTag()->pushContent(new_tag);
             this->pushController(new_tag);
 
+            this->lbracket_identified = true;
+
             return;
         }
 
         // Handle the ending of a BBCode tag
         if (c == RBRACKET) {
+
+            // Prevent end case where someone might insert multiple rbrackets
+            if (!this->lbracket_identified) {
+                controller->insertChar(c);
+                return;
+            }
+
+            lbracket_identified = false;
 
             if (controller->isClosingTag()) {
 
