@@ -47,7 +47,7 @@ private:
         // Handle the beginning of a new BBCode tag
         if (c == LBRACKET) {
 
-            shared_ptr<BBCodeTag> new_tag = make_shared<BBCodeTag>(controller->getParent());
+            shared_ptr<BBCodeTag> new_tag = make_shared<BBCodeTag>(controller);
             this->controllerTag()->pushContent(new_tag);
             this->pushController(new_tag);
 
@@ -97,6 +97,12 @@ private:
             // Not a closing tag, exit param mode
 
             controller->exitParamMode();
+            return;
+        }
+
+        // Identify a closing tag
+        if (c == '/' && controller->emptyTag()) {
+            controller->setClosing();
             return;
         }
 
