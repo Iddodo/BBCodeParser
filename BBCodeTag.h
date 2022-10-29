@@ -13,6 +13,8 @@
 #include <cctype>
 
 
+#include <iostream>
+
 
 using std::vector;
 using std::shared_ptr;
@@ -34,6 +36,8 @@ class BBCodeTag : public BBCodeContentObject {
     bool root;
 
     bool whitespace_sequence;
+
+    bool closing;
 
 // Insert into tag
 public:
@@ -87,7 +91,8 @@ private:
 // Constructors
 public:
     BBCodeTag(shared_ptr<BBCodeTag> parent = nullptr)
-        : param_mode(true), valid(BBCODE_VALID), parent(parent), root(false), whitespace_sequence(false) {}
+        : param_mode(true), valid(BBCODE_VALID), parent(parent),
+          root(false), whitespace_sequence(false), closing(false){}
 
 // Boolean tests
 public:
@@ -98,10 +103,7 @@ public:
     bool isString() const { return false; }
 
     bool isClosingTag() const {
-
-        if (this->emptyTag()) return false;
-
-        return this->params[0][0] == '/';
+        return this->closing;
     }
 
 
@@ -110,7 +112,8 @@ public:
 
         if (!tag2 || this->emptyTag() || tag2->emptyTag()) return false;
 
-        return this->params[0].compare(tag2->params[0]);
+
+        return this->params[0].compare(tag2->params[0]) == 0;
     }
 
 
@@ -142,6 +145,10 @@ public:
         return this->params[0];
     }
 
+    void setClosing() {
+        this->closing = true;
+    }
+
 private:
 
     bool isWhitespace(char c) const {
@@ -159,11 +166,20 @@ public:
         // Return nothing on empty tag
         if(this->emptyTag() && !this->root) return "[]";
 
-        // Return nothing on closing tag
-        if (this->isClosingTag()) return "";
+        // Handle invalid tag
+        if (!this->isValid()) {
+            switch (this->valid) {
 
-        // Return nothing on invalid tags
-        if (!this->isValid()) return "";
+                case BBCODE_OUT_OF_PLACE_CLOSING_TAG:
+                    return "[/" + this->params[0] + "]";
+
+                default:
+                    return "";
+            }
+        }
+
+        // Return nothing on a valid closing tag
+        if (this->isClosingTag()) return "";
 
         string inner = this->renderInner();
         string tag = this->name();
