@@ -43,4 +43,4 @@ test
 - [ ] Make certain aspects of the code more elegant and organized (i.e. file structure, data regarding available tags, etc.)
 - [ ] Use Streams/Buffers
 - [ ] Fix segmentation fault on multiple closing tags in a row
-- [ ] Prevent exiting tag on a misplaced closing tag
+- [ ] Prevent exiting tag on a misplaced closing tag (decide the proper behavior)
