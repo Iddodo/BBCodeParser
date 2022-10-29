@@ -41,4 +41,6 @@ test
 - [ ] Add a data-structure description to the README.md file
 - [ ] Define rendering on erratic behavior
 - [ ] Make certain aspects of the code more elegant and organized (i.e. file structure, data regarding available tags, etc.)
-- [ ] Use Streams/Buffers to allow pipeling
+- [ ] Use Streams/Buffers
+- [ ] Fix segmentation fault on multiple closing tags in a row
+- [ ] Prevent exiting tag on a misplaced closing tag
