@@ -2,10 +2,13 @@
 #include "BBCodeEntity.h"
 #include "BBCodeRoot.h"
 #include "BBCodeStateManager.h"
+#include "BBCodeTag.h"
 #include "BBCodeText.h"
+#include "BBCodeTextualTag.h"
 
-BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeRenderer &&rend)
-    : renderer(rend) {
+BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
+                           BBCodeRenderer &&rend)
+    : renderer(rend), definition(def) {
 
   // Put root at the top of the stack
   this->stack_nestables.push(std::make_unique<BBCodeRoot>());
@@ -42,8 +45,13 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeRenderer &&rend)
     // No need to set the active tag, simply add this nestable to the stack
     // TODO: add support for non-nestable types
     case StateMachine::TagClosedWithNoParameters:
-      this->currentNestable()->appendEntity(std::unique_ptr<BBCodeEntity>(
-          dynamic_cast<BBCodeEntity *>(this->active_tag.release())));
+      auto tag_def =
+          this->definition.entry(std::string(this->active_tag->symbol()));
+      if (!tag_def.has_value()) {
+        throw std::string("Undefined tag name"
+                          " ") +
+            std::string(this->active_tag->symbol());
+      }
 
     // A parameter name now exists in the buffer.
     // Save the parameter name and clear the buffer.
