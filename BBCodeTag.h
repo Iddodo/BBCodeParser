@@ -9,7 +9,7 @@
 #include "BBCodeEntity.h"
 #include "BBCodeNestable.h"
 
-class BBCodeTag : public BBCodeEntity, public BBCodeNestable {
+class BBCodeTag : public BBCodeEntity {
   std::unordered_map<std::string_view, std::string_view> m_parameters;
   std::string_view m_symbol;
 
@@ -24,7 +24,9 @@ public:
 
   const auto &parameters() const;
 
-  std::optional<std::string_view> nestableSymbol() const override;
+  virtual bool isNestable() const;
 };
+
+enum class BBCodeTagType { SelfClosing, Nestable, Textual };
 
 #endif
