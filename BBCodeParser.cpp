@@ -11,7 +11,8 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
     : renderer(rend), definition(def) {
 
   // Put root at the top of the stack
-  this->stack_nestables.push(std::make_unique<BBCodeRoot>());
+  this->root = std::unique_ptr<BBCodeEntity>(new BBCodeRoot());
+  this->stack_nestables.push(this->root);
 
   // Iterate over string using the state machine
   for (auto ch : src_text) {
@@ -43,8 +44,8 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
       break;
 
     // No need to set the active tag, simply add this nestable to the stack
-    // TODO: add support for non-nestable types
     case StateMachine::TagClosedWithNoParameters:
+      std::unique_ptr<BBCodeEntity> tag{};
       auto tag_def =
           this->definition.entry(std::string(this->active_tag->symbol()));
       if (!tag_def.has_value()) {
@@ -52,6 +53,31 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
                           " ") +
             std::string(this->active_tag->symbol());
       }
+
+      switch (tag_def.value().tag_type) {
+      case BBCodeTagType::Textual:
+        tag = std::unique_ptr<BBCodeEntity>(
+            new BBCodeTextualTag(this->active_tag));
+        break;
+      case BBCodeTagType::Nestable:
+        tag = std::unique_ptr<BBCodeEntity>(
+            new BBCodeNestableTag(this->active_tag));
+        break;
+      case BBCodeTagType::SelfClosing:
+        tag = std::unique_ptr<BBCodeEntity>(
+            new BBCodeNestableTag(this->active_tag));
+        break;
+      }
+
+      this->active_tag.reset();
+      auto &ref = this->currentNestable()->appendEntity(tag);
+
+      // Add tag to stack if it's nestable
+      if (tag_def.value().tag_type != BBCodeTagType::SelfClosing) {
+        this->stack_nestables.push(ref);
+      }
+
+      break;
 
     // A parameter name now exists in the buffer.
     // Save the parameter name and clear the buffer.
