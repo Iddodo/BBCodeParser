@@ -11,8 +11,7 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
     : renderer(rend), definition(def) {
 
   // Put root at the top of the stack
-  this->root = std::unique_ptr<BBCodeEntity>(new BBCodeRoot());
-  this->stack_nestables.push(this->root);
+  this->stack_nestables.push(std::unique_ptr<BBCodeEntity>(new BBCodeRoot()));
 
   // Iterate over string using the state machine
   for (auto ch : src_text) {
@@ -25,26 +24,29 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
     case StateMachine::ClosingTagDefinition:
     case StateMachine::ParameterKey:
     case StateMachine::ParameterUnquotedValue:
-    case StateMachine::ParameterDoubleQuotedValue:
+    case StateMachine::ParameterDoubleQuotedValue: {
       this->buffer += ch;
       break;
+    }
 
     // Append any existing text in the buffer to the current nestable
     // Empty buffer and prepare for a possible tag definition
-    case StateMachine::LeftBracket:
+    case StateMachine::LeftBracket: {
       if (!this->buffer.empty()) {
         this->appendTextToCurrentNestable(this->buffer);
         this->buffer.clear();
       }
       break;
+    }
 
-    case StateMachine::TagAwaitParameters:
+    case StateMachine::TagAwaitParameters: {
       this->active_tag = std::make_unique<BBCodeTag>(this->buffer);
       this->buffer.clear();
       break;
+    }
 
     // No need to set the active tag, simply add this nestable to the stack
-    case StateMachine::TagClosedWithNoParameters:
+    case StateMachine::TagClosedWithNoParameters: {
       std::unique_ptr<BBCodeEntity> tag{};
       auto tag_def =
           this->definition.entry(std::string(this->active_tag->symbol()));
@@ -70,40 +72,50 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
       }
 
       this->active_tag.reset();
-      auto &ref = this->currentNestable()->appendEntity(tag);
+      auto &nest = this->currentNestable();
 
       // Add tag to stack if it's nestable
       if (tag_def.value().tag_type != BBCodeTagType::SelfClosing) {
-        this->stack_nestables.push(ref);
+        this->stack_nestables.push(std::move(tag));
+
+        // Otherwise, the tag needs to be appended to the current nestable
+        // immediately.
+      } else {
+        nest->appendEntity(tag);
       }
 
+      // TODO: Remember to append the created nestable tag to its parent after
+      // it has been closed.
+
       break;
+    }
 
     // A parameter name now exists in the buffer.
     // Save the parameter name and clear the buffer.
     case StateMachine::ParameterAwaitEqualSign:
-    case StateMachine::ParameterEqualSign:
+    case StateMachine::ParameterEqualSign: {
       this->active_param_key = this->buffer;
       this->buffer.clear();
       break;
+    }
 
-    case StateMachine::TagParameterEmptyValue:
+    case StateMachine::TagParameterEmptyValue: {
       throw std::string("Empty value for parameter: ") + this->active_param_key;
       break;
+    }
 
     // Current behavior: do not allow illegal parameters
-    case StateMachine::TagParameterIllegalValue:
+    case StateMachine::TagParameterIllegalValue: {
       throw std::string("Illegal parameter: ") + this->active_param_key;
       break;
+    }
 
     // Current behavior: do not allow rogue symbols
-    case StateMachine::TagBadQuoteSign:
+    case StateMachine::TagBadQuoteSign: {
       throw std::string("Bad quote sign in tag definition: ") +
           std::string(this->active_tag->symbol());
       break;
-
-    case StateMachine::ClosingTagAwaitSymbol:
-      break;
+    }
 
     case StateMachine::ClosingTagBadSymbolName:
       throw std::string("Attempted closing tag name '") + this->buffer +
@@ -113,14 +125,16 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
           "'";
       break;
 
-    case StateMachine::ClosingTagBadAdditionalLiterals:
+    case StateMachine::ClosingTagBadAdditionalLiterals: {
       throw std::string("Closing tag contains additional characters: ") +
           this->buffer;
       break;
+    }
 
-    case StateMachine::EmptyBracketPair:
+    case StateMachine::EmptyBracketPair: {
       throw "An illegal empty bracket pair has been identified";
       break;
+    }
 
     // Feed opening and closing tags to the state machine, which will adjust the
     // state accordingy
@@ -138,6 +152,7 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
 
     case StateMachine::LeftBracketAwaitTagDefinition:
     case StateMachine::ParameterAwaitValue:
+    case StateMachine::ClosingTagAwaitSymbol:
       break;
     }
   }
