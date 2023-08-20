@@ -16,7 +16,7 @@ class BBCodeParser {
   BBCodeStateManager fsm;
   BBCodeRenderer &renderer;
   BBCodeDefinition &definition;
-  std::stack<ent_ptr> stack_nestables;
+  std::stack<std::unique_ptr<BBCodeNestable>> stack_nestables;
   std::string buffer;
   std::unique_ptr<BBCodeTag> active_tag;
   std::string active_param_key;

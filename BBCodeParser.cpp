@@ -11,17 +11,19 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
     : renderer(rend), definition(def) {
 
   // Put root at the top of the stack
-  this->stack_nestables.push(std::unique_ptr<BBCodeEntity>(new BBCodeRoot()));
+  this->stack_nestables.push(std::unique_ptr<BBCodeNestable>(new BBCodeRoot()));
 
   // Iterate over string using the state machine
   for (auto ch : src_text) {
     this->fsm.feedCharacter(ch);
     switch (fsm.currentState()) {
 
-    // Add character to the parser buffer member variable
+      // Add character to the parser buffer member variable
+
     case StateMachine::TextInsertion:
     case StateMachine::TagDefinition:
     case StateMachine::ClosingTagDefinition:
+    case StateMachine::LeftBracketDuplicate:
     case StateMachine::ParameterKey:
     case StateMachine::ParameterUnquotedValue:
     case StateMachine::ParameterDoubleQuotedValue: {
@@ -125,6 +127,12 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
           "'";
       break;
 
+    case StateMachine::OpeningTagBadAdditionalLiterals: {
+      throw std::string("Opening tag contains additional characters: ") +
+          this->buffer;
+      break;
+    }
+
     case StateMachine::ClosingTagBadAdditionalLiterals: {
       throw std::string("Closing tag contains additional characters: ") +
           this->buffer;
@@ -149,6 +157,12 @@ BBCodeParser::BBCodeParser(std::string_view src_text, BBCodeDefinition &&def,
         // The current behavior throws an exception.
       }
       break;
+
+    // TODO
+    case StateMachine::OpeningTagRightBracket:
+    case StateMachine::OpeningTagPairEndRightBracket:
+    case StateMachine::ParameterPairEnd:
+    case StateMachine::RightBracketDuplicate:
 
     case StateMachine::LeftBracketAwaitTagDefinition:
     case StateMachine::ParameterAwaitValue:

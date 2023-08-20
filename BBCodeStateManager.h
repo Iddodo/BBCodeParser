@@ -11,11 +11,15 @@ enum class StateMachine {
   // Instance of some left bracket appearing
   // Should handle case of bracket sequence ('[[[...')
   LeftBracket,
+  LeftBracketDuplicate,
   LeftBracketAwaitTagDefinition,
 
   TagDefinition,
   TagAwaitParameters,
   TagClosedWithNoParameters,
+  OpeningTagBadAdditionalLiterals,
+  OpeningTagRightBracket,
+  OpeningTagPairEndRightBracket,
 
   ParameterKey,
   ParameterAwaitEqualSign,
@@ -28,6 +32,7 @@ enum class StateMachine {
   TagParameterIllegalValue,
   ParameterUnquotedValue,
   ParameterDoubleQuotedValue,
+  ParameterPairEnd,
   // ParameterDoubleQuotedBackslash,
 
   // A bad quote sign eliminates the tag definition
@@ -40,7 +45,8 @@ enum class StateMachine {
   ClosingTagRightBracket,
   ClosingTagBadAdditionalLiterals,
 
-  EmptyBracketPair
+  EmptyBracketPair,
+  RightBracketDuplicate
 };
 
 class BBCodeStateManager {
@@ -57,14 +63,6 @@ public:
 
 private:
   void handlerRouter(char ch);
-
-private:
-  void textInsertionScopeHandler();
-  void textLeftBracketHandler();
-  void tagDefinitionHandler();
-  void tagAwaitParametersHandler();
-  void parameterKeyHandler();
-  void parameterValueHandler();
 };
 
 #endif
