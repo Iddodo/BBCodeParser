@@ -1,6 +1,6 @@
 # BBCodeParser
 This project is currently undergoing a serious rewrite,
-adding multiple features which were unexisting before and imporving safety and readability.
+adding multiple features which were non-existent before and improving safety and readability.
 
 A working prototype will be uploaded in the following days.
 
